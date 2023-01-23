@@ -31,6 +31,11 @@ func (t *Table) Fill() {
 	}
 }
 
+func (table *Table) Neighbors(x, y int) int {
+	return 5
+	// TODO: return number of neighbors of given (x,y) cell
+}
+
 func (g *Game) Start() {
 	g.clock = 0.1
 	g.table.Fill()
@@ -52,18 +57,8 @@ func (g *Game) Update() error {
 	newtable.Fill()
 	for x, row := range g.table.cells {
 		for y, cell := range row {
-			var neighbors []bool
-			if x > 0 && x < 63 && y < 63 && y > 0 {
-				neighbors = []bool{g.table.cells[x-1][y-1], g.table.cells[x][y-1], g.table.cells[x+1][y-1],
-					g.table.cells[x-1][y], g.table.cells[x+1][y],
-					g.table.cells[x-1][y+1], g.table.cells[x][y+1], g.table.cells[x+1][y+1]}
-			}
-			sum := 0
-			for _, n := range neighbors {
-				if n {
-					sum += 1
-				}
-			}
+			sum := g.table.Neighbors(x, y)
+			newtable.cells[x][y] = cell
 			if sum < 2 {
 				newtable.cells[x][y] = false
 			}
@@ -75,6 +70,7 @@ func (g *Game) Update() error {
 			}
 		}
 	}
+	g.table = newtable
 	g.round += 1
 	return nil
 }
