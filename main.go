@@ -22,6 +22,11 @@ type Table struct {
 	cells [][]bool
 }
 
+type Pair struct{
+	x int
+	y int
+	}
+
 func (t *Table) Fill() {
 	for i := 0; i < 64; i += 1 {
 		t.cells = append(t.cells, []bool{})
@@ -32,8 +37,24 @@ func (t *Table) Fill() {
 }
 
 func (table *Table) Neighbors(x, y int) int {
-	return 5
-	// TODO: return number of neighbors of given (x,y) cell
+	sum := 0
+	var neighbors []Pair {
+		{x-1, y-1}, {x, y-1}, {x+1, y-1},
+		{x-1, y}, 			, {x+1, y},
+		{x-1, y+1}, {x, y+1}, {x+1, y+1}
+	}
+	var valid []bool
+	for pair := range neighbors{
+		if pair.x >= 0 && pair.x <= 63 && pair.y >= 0 && pair.y <= 63{
+			valid = append(valid, table.cells[x][y])
+		} 
+	}
+	for _, v := valid{
+		if v{
+			sum += 1
+		}
+	}
+	return sum
 }
 
 func (g *Game) Start() {
