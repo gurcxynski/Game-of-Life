@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"log"
+	"math/rand"
 
 	"math"
 	"time"
@@ -10,6 +11,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
+
+const cellnum = 256
+const cellsize = 3
+const speed = 1000
 
 type Game struct {
 	table      Table
@@ -22,35 +27,29 @@ type Table struct {
 	cells [][]bool
 }
 
-type Pair struct{
+type Pair struct {
 	x int
 	y int
-	}
+}
 
 func (t *Table) Fill() {
-	for i := 0; i < 64; i += 1 {
+	for i := 0; i < cellnum; i += 1 {
 		t.cells = append(t.cells, []bool{})
-		for j := 0; j < 64; j += 1 {
-			t.cells[i] = append(t.cells[i], false)
+		for j := 0; j < cellnum; j += 1 {
+			t.cells[i] = append(t.cells[i], rand.Int()%2 == 0)
 		}
 	}
 }
 
 func (table *Table) Neighbors(x, y int) int {
 	sum := 0
-	var neighbors []Pair {
-		{x-1, y-1}, {x, y-1}, {x+1, y-1},
-		{x-1, y}, 			, {x+1, y},
-		{x-1, y+1}, {x, y+1}, {x+1, y+1}
+	neighbors := []Pair{
+		{x - 1, y - 1}, {x, y - 1}, {x + 1, y - 1},
+		{x - 1, y}, {x + 1, y},
+		{x - 1, y + 1}, {x, y + 1}, {x + 1, y + 1},
 	}
-	var valid []bool
-	for pair := range neighbors{
-		if pair.x >= 0 && pair.x <= 63 && pair.y >= 0 && pair.y <= 63{
-			valid = append(valid, table.cells[x][y])
-		} 
-	}
-	for _, v := valid{
-		if v{
+	for _, pair := range neighbors {
+		if pair.x >= 0 && pair.x < cellnum && pair.y >= 0 && pair.y < cellnum && table.cells[pair.x][pair.y] {
 			sum += 1
 		}
 	}
@@ -58,10 +57,9 @@ func (table *Table) Neighbors(x, y int) int {
 }
 
 func (g *Game) Start() {
-	g.clock = 0.1
+	g.clock = 1000 / speed
 	g.table.Fill()
 	g.lastupdate = time.Now().UnixMilli()
-	g.table.cells[5][5] = true
 }
 
 func (g *Game) Update() error {
@@ -97,21 +95,21 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	for i := 0; i < 64; i += 1 {
-		for j := 0; j < 64; j += 1 {
+	for i := 0; i < cellnum; i += 1 {
+		for j := 0; j < cellnum; j += 1 {
 			if g.table.cells[i][j] {
-				ebitenutil.DrawRect(screen, float64(i*10)+1, float64(j*10)+1, 8, 8, color.White)
+				ebitenutil.DrawRect(screen, float64(i*cellsize)+1, float64(j*cellsize)+1, cellsize-2, cellsize-2, color.White)
 			}
 		}
 	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return 640, 640
+	return cellnum * cellsize, cellnum * cellsize
 }
 
 func main() {
-	ebiten.SetWindowSize(640, 640)
+	ebiten.SetWindowSize(cellnum*cellsize, cellnum*cellsize)
 	ebiten.SetWindowTitle("Game of Life")
 	if err := ebiten.RunGame(&Game{}); err != nil {
 		log.Fatal(err)
