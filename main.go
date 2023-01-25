@@ -1,27 +1,29 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 	"log"
-	"math/rand"
 
 	"math"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
-
-const cellnum = 256
-const cellsize = 3
-const speed = 1000
 
 type Game struct {
 	table      Table
 	clock      float64
 	lastupdate int64
 	round      int
+	ready      bool
 }
+
+var cellnum int
+var cellsize int
+var speed float64
 
 type Table struct {
 	cells [][]bool
@@ -36,7 +38,7 @@ func (t *Table) Fill() {
 	for i := 0; i < cellnum; i += 1 {
 		t.cells = append(t.cells, []bool{})
 		for j := 0; j < cellnum; j += 1 {
-			t.cells[i] = append(t.cells[i], rand.Int()%2 == 0)
+			t.cells[i] = append(t.cells[i], false)
 		}
 	}
 }
@@ -56,16 +58,35 @@ func (table *Table) Neighbors(x, y int) int {
 	return sum
 }
 
-func (g *Game) Start() {
+func (g *Game) Setup() {
 	g.clock = 1000 / speed
 	g.table.Fill()
-	g.lastupdate = time.Now().UnixMilli()
+	g.round = 0
+	g.ready = true
 }
 
 func (g *Game) Update() error {
+	if !g.ready {
+		g.Setup()
+		return nil
+	}
 	if g.round == 0 {
-		g.Start()
-		g.round += 1
+		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+			x, y := ebiten.CursorPosition()
+			x = x / cellsize
+			y = y / cellsize
+			g.table.cells[x][y] = true
+		}
+		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
+			x, y := ebiten.CursorPosition()
+			x = x / cellsize
+			y = y / cellsize
+			g.table.cells[x][y] = false
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+			g.round = 1
+			g.lastupdate = time.Now().UnixMilli()
+		}
 		return nil
 	}
 	if elapsed := math.Abs(float64(time.Now().UnixMilli() - g.lastupdate)); elapsed < g.clock {
@@ -98,7 +119,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	for i := 0; i < cellnum; i += 1 {
 		for j := 0; j < cellnum; j += 1 {
 			if g.table.cells[i][j] {
-				ebitenutil.DrawRect(screen, float64(i*cellsize)+1, float64(j*cellsize)+1, cellsize-2, cellsize-2, color.White)
+				ebitenutil.DrawRect(screen, float64(i*cellsize)+1, float64(j*cellsize)+1, float64(cellsize-2), float64(cellsize-2), color.White)
 			}
 		}
 	}
@@ -109,6 +130,19 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func main() {
+
+	var input int
+	fmt.Println("Number of cells in a row: ")
+	fmt.Scanln(&input)
+	cellnum = input
+	fmt.Println("Pixel size of a cell: ")
+	fmt.Scanln(&input)
+	cellsize = input
+	var s float64
+	fmt.Println("Amount of game ticks per second: ")
+	fmt.Scanln(&s)
+	speed = s
+
 	ebiten.SetWindowSize(cellnum*cellsize, cellnum*cellsize)
 	ebiten.SetWindowTitle("Game of Life")
 	if err := ebiten.RunGame(&Game{}); err != nil {
